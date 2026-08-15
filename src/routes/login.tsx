@@ -215,10 +215,10 @@ function LoginPage() {
                         <InputOTPSlot index={5} />
                       </InputOTPGroup>
                     </InputOTP>
-                    <p className="text-xs text-muted-foreground">
-                      Ambiente de demonstração — código simulado{" "}
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <span>Ambiente de demonstração — código simulado</span>
                       <Badge variant="secondary">{MOCK_OTP}</Badge>
-                    </p>
+                    </div>
                     {error ? <p className="text-sm text-destructive">{error}</p> : null}
                   </div>
 
