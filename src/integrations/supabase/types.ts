@@ -14,7 +14,109 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      agendamentos: {
+        Row: {
+          created_at: string
+          id: string
+          scheduled_at: string
+          status: string
+          user_id: string
+          video_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          scheduled_at: string
+          status?: string
+          user_id: string
+          video_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          scheduled_at?: string
+          status?: string
+          user_id?: string
+          video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agendamentos_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      logs: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          message: string | null
+          user_id: string
+          video_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          message?: string | null
+          user_id: string
+          video_id: string
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          message?: string | null
+          user_id?: string
+          video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "logs_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      videos: {
+        Row: {
+          created_at: string
+          filename: string
+          hash: string
+          id: string
+          original_path: string | null
+          status: Database["public"]["Enums"]["video_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          filename: string
+          hash: string
+          id?: string
+          original_path?: string | null
+          status?: Database["public"]["Enums"]["video_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          filename?: string
+          hash?: string
+          id?: string
+          original_path?: string | null
+          status?: Database["public"]["Enums"]["video_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +125,14 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      video_status:
+        | "Pendente"
+        | "Processando"
+        | "Pronto"
+        | "Agendado"
+        | "Publicando"
+        | "Publicado"
+        | "Com Erro"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +259,16 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      video_status: [
+        "Pendente",
+        "Processando",
+        "Pronto",
+        "Agendado",
+        "Publicando",
+        "Publicado",
+        "Com Erro",
+      ],
+    },
   },
 } as const
