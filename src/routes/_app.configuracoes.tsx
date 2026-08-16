@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useMockAuth } from "@/lib/mock-auth";
+import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/_app/configuracoes")({
   head: () => ({
@@ -35,7 +35,7 @@ export const Route = createFileRoute("/_app/configuracoes")({
 });
 
 function SettingsPage() {
-  const { email } = useMockAuth();
+  const { email } = useAuth();
   const { theme, toggle } = useTheme();
   const [workspace, setWorkspace] = useState("AutoVideo Studio");
   const [quality, setQuality] = useState("1080p");

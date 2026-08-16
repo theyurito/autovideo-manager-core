@@ -11,7 +11,7 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
-import { MockAuthProvider } from "@/lib/mock-auth";
+import { AuthProvider } from "@/lib/auth";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -134,13 +134,13 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
-        <MockAuthProvider>
+        <AuthProvider>
           <TooltipProvider delayDuration={200}>
             {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
             <Outlet />
             <Toaster richColors position="top-right" />
           </TooltipProvider>
-        </MockAuthProvider>
+        </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );
