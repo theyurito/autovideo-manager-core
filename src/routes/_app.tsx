@@ -10,22 +10,22 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { useMockAuth } from "@/lib/mock-auth";
+import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/_app")({
   component: AppLayout,
 });
 
 function AppLayout() {
-  const { isAuthenticated, email, signOut } = useMockAuth();
+  const { isAuthenticated, email, signOut, loading } = useAuth();
   const navigate = useNavigate();
   const { theme, toggle } = useTheme();
 
   useEffect(() => {
-    if (!isAuthenticated) navigate({ to: "/login", replace: true });
-  }, [isAuthenticated, navigate]);
+    if (!loading && !isAuthenticated) navigate({ to: "/login", replace: true });
+  }, [isAuthenticated, loading, navigate]);
 
-  if (!isAuthenticated) {
+  if (loading || !isAuthenticated) {
     return <Loader label="Verificando acesso..." className="min-h-screen" />;
   }
 
@@ -52,8 +52,8 @@ function AppLayout() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => {
-                  signOut();
+                onClick={async () => {
+                  await signOut();
                   toast.success("Sessão encerrada");
                   navigate({ to: "/login", replace: true });
                 }}
