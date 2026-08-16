@@ -41,7 +41,7 @@ export function uploadToStorage(options: {
   file: File;
   accessToken: string;
   onProgress: (percent: number) => void;
-  signal?: AbortSignal;
+  signal?: AbortSignal | undefined;
 }): Promise<void> {
   const { path, file, accessToken, onProgress, signal } = options;
 
@@ -99,7 +99,7 @@ export async function processVideoFile(options: {
   accessToken: string;
   onStage: (stage: "hashing" | "checking" | "uploading" | "saving") => void;
   onProgress: (percent: number) => void;
-  signal?: AbortSignal;
+  signal?: AbortSignal | undefined;
 }) {
   const { file, userId, accessToken, onStage, onProgress, signal } = options;
 
