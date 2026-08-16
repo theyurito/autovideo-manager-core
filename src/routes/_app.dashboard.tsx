@@ -104,35 +104,10 @@ function DashboardPage() {
         ))}
       </div>
 
-      <Card>
-        <CardHeader className="flex-row items-center justify-between gap-2 space-y-0">
-          <CardTitle className="text-base">Execuções recentes</CardTitle>
-          <Button variant="ghost" size="sm" onClick={() => setView(view === "error" ? "empty" : "error")}>
-            {view === "error" ? "Ver estado vazio" : "Simular erro"}
-          </Button>
-        </CardHeader>
-        <CardContent>
-          {view === "loading" ? (
-            <Loader label="Carregando execuções..." />
-          ) : view === "error" ? (
-            <ErrorState
-              description="Não foi possível carregar as execuções (simulação)."
-              onRetry={simulateRefresh}
-            />
-          ) : (
-            <EmptyState
-              icon={<Film className="h-5 w-5" />}
-              title="Nenhuma execução ainda"
-              description="Quando os lotes começarem a rodar, o histórico aparecerá aqui."
-              action={
-                <Button variant="outline" onClick={() => setOpen(true)}>
-                  <Plus /> Criar primeiro lote
-                </Button>
-              }
-            />
-          )}
-        </CardContent>
-      </Card>
+      <VideoUploader />
+
+      <VideoQueue />
+
     </div>
   );
 }
