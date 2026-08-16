@@ -22,7 +22,8 @@ import {
   InputOTPSlot,
 } from "@/components/ui/input-otp";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { AUTHORIZED_EMAIL, MOCK_OTP, useMockAuth } from "@/lib/mock-auth";
+import { supabase } from "@/integrations/supabase/client";
+import { AUTHORIZED_EMAIL } from "@/lib/auth";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -47,7 +48,6 @@ type Step = "email" | "otp" | "granted" | "denied";
 
 function LoginPage() {
   const navigate = useNavigate();
-  const { signIn } = useMockAuth();
   const [step, setStep] = useState<Step>("email");
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
@@ -63,38 +63,53 @@ function LoginPage() {
     return () => clearTimeout(t);
   }, [step, navigate]);
 
-  function handleSendCode() {
+  async function handleSendCode() {
     setError(null);
     setSending(true);
-    setTimeout(() => {
+    const normalized = email.trim().toLowerCase();
+
+    if (normalized !== AUTHORIZED_EMAIL) {
       setSending(false);
-      if (email.trim().toLowerCase() !== AUTHORIZED_EMAIL) {
-        setStep("denied");
-        setError("Este email não está autorizado a acessar o sistema.");
-        toast.error("Acesso negado", { description: "Email não autorizado." });
-        return;
-      }
-      setStep("otp");
-      toast.success("Código enviado", {
-        description: `Simulação: use o código ${MOCK_OTP}.`,
-      });
-    }, 1200);
+      setStep("denied");
+      setError("Este email não está autorizado a acessar o sistema.");
+      toast.error("Acesso negado", { description: "Email não autorizado." });
+      return;
+    }
+
+    const { error: otpError } = await supabase.auth.signInWithOtp({
+      email: normalized,
+      options: { shouldCreateUser: true },
+    });
+    setSending(false);
+
+    if (otpError) {
+      setError(otpError.message);
+      toast.error("Não foi possível enviar o código", { description: otpError.message });
+      return;
+    }
+
+    setStep("otp");
+    toast.success("Código enviado", { description: "Confira sua caixa de entrada." });
   }
 
-  function handleVerify() {
+  async function handleVerify() {
     setError(null);
     setVerifying(true);
-    setTimeout(() => {
-      setVerifying(false);
-      if (code !== MOCK_OTP) {
-        setError("Código inválido. Tente novamente.");
-        toast.error("Código inválido", { description: "Verifique os 6 dígitos." });
-        return;
-      }
-      signIn(email.trim().toLowerCase());
-      setStep("granted");
-      toast.success("Acesso autorizado", { description: "Redirecionando para o painel..." });
-    }, 1200);
+    const { error: verifyError } = await supabase.auth.verifyOtp({
+      email: email.trim().toLowerCase(),
+      token: code,
+      type: "email",
+    });
+    setVerifying(false);
+
+    if (verifyError) {
+      setError("Código inválido ou expirado. Tente novamente.");
+      toast.error("Código inválido", { description: "Verifique os 6 dígitos." });
+      return;
+    }
+
+    setStep("granted");
+    toast.success("Acesso autorizado", { description: "Redirecionando para o painel..." });
   }
 
   function resetFlow() {
@@ -216,8 +231,8 @@ function LoginPage() {
                       </InputOTPGroup>
                     </InputOTP>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <span>Ambiente de demonstração — código simulado</span>
-                      <Badge variant="secondary">{MOCK_OTP}</Badge>
+                      <span>Código de 6 dígitos enviado por email</span>
+                      <Badge variant="secondary">válido por alguns minutos</Badge>
                     </div>
                     {error ? <p className="text-sm text-destructive">{error}</p> : null}
                   </div>
@@ -248,7 +263,7 @@ function LoginPage() {
         </div>
 
         <p className="mt-6 text-center text-xs text-muted-foreground">
-          Fluxo mockado apenas para validação de interface. Nenhum dado é enviado.
+          Acesso restrito. O código de verificação é enviado apenas ao email autorizado.
         </p>
       </div>
     </main>
