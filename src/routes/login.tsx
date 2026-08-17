@@ -63,6 +63,17 @@ function LoginPage() {
     return () => clearTimeout(t);
   }, [step, navigate]);
 
+  // Se o acesso for concluído pelo link do email, a sessão chega por aqui.
+  useEffect(() => {
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
+      if (session) setStep("granted");
+    });
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) setStep("granted");
+    });
+    return () => sub.subscription.unsubscribe();
+  }, []);
+
   async function handleSendCode() {
     setError(null);
     setSending(true);
@@ -78,7 +89,10 @@ function LoginPage() {
 
     const { error: otpError } = await supabase.auth.signInWithOtp({
       email: normalized,
-      options: { shouldCreateUser: true },
+      options: {
+        shouldCreateUser: true,
+        emailRedirectTo: `${window.location.origin}/login`,
+      },
     });
     setSending(false);
 
@@ -89,8 +103,11 @@ function LoginPage() {
     }
 
     setStep("otp");
-    toast.success("Código enviado", { description: "Confira sua caixa de entrada." });
+    toast.success("Email enviado", {
+      description: "Clique no link do email ou digite o código, se houver.",
+    });
   }
+
 
   async function handleVerify() {
     setError(null);
