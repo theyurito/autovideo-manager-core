@@ -63,6 +63,17 @@ function LoginPage() {
     return () => clearTimeout(t);
   }, [step, navigate]);
 
+  // Se o acesso for concluído pelo link do email, a sessão chega por aqui.
+  useEffect(() => {
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
+      if (session) setStep("granted");
+    });
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) setStep("granted");
+    });
+    return () => sub.subscription.unsubscribe();
+  }, []);
+
   async function handleSendCode() {
     setError(null);
     setSending(true);
@@ -78,7 +89,10 @@ function LoginPage() {
 
     const { error: otpError } = await supabase.auth.signInWithOtp({
       email: normalized,
-      options: { shouldCreateUser: true },
+      options: {
+        shouldCreateUser: true,
+        emailRedirectTo: `${window.location.origin}/login`,
+      },
     });
     setSending(false);
 
@@ -89,8 +103,11 @@ function LoginPage() {
     }
 
     setStep("otp");
-    toast.success("Código enviado", { description: "Confira sua caixa de entrada." });
+    toast.success("Email enviado", {
+      description: "Clique no link do email ou digite o código, se houver.",
+    });
   }
+
 
   async function handleVerify() {
     setError(null);
@@ -206,7 +223,7 @@ function LoginPage() {
                 <div className="space-y-5">
                   <div className="flex items-center gap-2 rounded-lg border border-success/30 bg-success/10 px-3 py-2 text-sm text-foreground">
                     <ShieldCheck className="h-4 w-4 text-success" />
-                    Código enviado para o email informado.
+                    Email enviado. Clique em "Verify Email" na mensagem para entrar.
                   </div>
 
                   <div className="space-y-3">
@@ -231,7 +248,7 @@ function LoginPage() {
                       </InputOTPGroup>
                     </InputOTP>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <span>Código de 6 dígitos enviado por email</span>
+                      <span>Se o email trouxer um código de 6 dígitos, digite-o aqui</span>
                       <Badge variant="secondary">válido por alguns minutos</Badge>
                     </div>
                     {error ? <p className="text-sm text-destructive">{error}</p> : null}
