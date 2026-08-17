@@ -248,7 +248,7 @@ function LoginPage() {
                       </InputOTPGroup>
                     </InputOTP>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <span>Código de 6 dígitos enviado por email</span>
+                      <span>Se o email trouxer um código de 6 dígitos, digite-o aqui</span>
                       <Badge variant="secondary">válido por alguns minutos</Badge>
                     </div>
                     {error ? <p className="text-sm text-destructive">{error}</p> : null}
