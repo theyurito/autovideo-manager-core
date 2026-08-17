@@ -223,7 +223,7 @@ function LoginPage() {
                 <div className="space-y-5">
                   <div className="flex items-center gap-2 rounded-lg border border-success/30 bg-success/10 px-3 py-2 text-sm text-foreground">
                     <ShieldCheck className="h-4 w-4 text-success" />
-                    Código enviado para o email informado.
+                    Email enviado. Clique em "Verify Email" na mensagem para entrar.
                   </div>
 
                   <div className="space-y-3">
