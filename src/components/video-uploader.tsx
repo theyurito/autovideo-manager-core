@@ -7,11 +7,25 @@ import { EmptyState, ErrorState, Loader } from "@/components/states";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
-import { DuplicateVideoError, isVideoFile, processVideoFile } from "@/lib/video-upload";
+import {
+  createVideoEntry,
+  DuplicateFileError,
+  type DuplicateInfo,
+  isVideoFile,
+  processVideoFile,
+} from "@/lib/video-upload";
 
 type ItemStatus = "queued" | "hashing" | "checking" | "uploading" | "saving" | "done" | "duplicate" | "error";
 
@@ -46,11 +60,36 @@ export function VideoUploader() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
   const [items, setItems] = useState<QueueItem[]>([]);
+  const [duplicate, setDuplicate] = useState<DuplicateInfo | null>(null);
+  const [creating, setCreating] = useState(false);
   const runningRef = useRef(false);
 
   const update = useCallback((id: string, patch: Partial<QueueItem>) => {
     setItems((prev) => prev.map((item) => (item.id === id ? { ...item, ...patch } : item)));
   }, []);
+
+  const confirmNewEntry = useCallback(async () => {
+    if (!duplicate || !userId) return;
+    setCreating(true);
+    try {
+      await createVideoEntry({
+        arquivoId: duplicate.arquivoId,
+        userId,
+        filename: duplicate.newFilename,
+        storagePath: duplicate.storagePath,
+        hash: duplicate.hash,
+      });
+      toast.success("Nova entrada criada", { description: duplicate.newFilename });
+      await queryClient.invalidateQueries({ queryKey: ["videos", userId] });
+      setDuplicate(null);
+    } catch (error) {
+      toast.error("Falha ao criar entrada", {
+        description: error instanceof Error ? error.message : "Erro desconhecido",
+      });
+    } finally {
+      setCreating(false);
+    }
+  }, [duplicate, queryClient, userId]);
 
   const mutation = useMutation({
     mutationFn: async (files: File[]) => {
@@ -82,9 +121,12 @@ export function VideoUploader() {
           toast.success("Vídeo enviado", { description: file.name });
           await queryClient.invalidateQueries({ queryKey: ["videos", userId] });
         } catch (error) {
-          if (error instanceof DuplicateVideoError) {
-            update(item.id, { status: "duplicate", message: error.message });
-            toast.error("Este vídeo já foi enviado anteriormente.", { description: file.name });
+          if (error instanceof DuplicateFileError) {
+            update(item.id, {
+              status: "duplicate",
+              message: "Arquivo já existe (mesmo SHA-256). Nenhum upload foi feito.",
+            });
+            setDuplicate(error.info);
           } else {
             const message = error instanceof Error ? error.message : "Erro desconhecido";
             update(item.id, { status: "error", message });
@@ -94,6 +136,7 @@ export function VideoUploader() {
       }
     },
   });
+
 
   const handleFiles = useCallback(
     (fileList: FileList | null) => {
@@ -214,10 +257,33 @@ export function VideoUploader() {
             ))}
           </ul>
         ) : null}
+
+        <Dialog open={!!duplicate} onOpenChange={(open) => !open && setDuplicate(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Arquivo já existe</DialogTitle>
+              <DialogDescription>
+                O conteúdo de <strong>{duplicate?.newFilename}</strong> tem o mesmo SHA-256 de{" "}
+                <strong>{duplicate?.filename}</strong>, já armazenado ({duplicate?.existingEntries}{" "}
+                entrada(s) na fila). Nenhum upload novo foi feito. Você pode criar uma nova entrada
+                operacional reutilizando o mesmo arquivo.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setDuplicate(null)} disabled={creating}>
+                Cancelar
+              </Button>
+              <Button onClick={confirmNewEntry} disabled={creating}>
+                {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : null} Criar nova entrada
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   );
 }
+
 
 export function VideoQueue() {
   const { userId } = useAuth();
@@ -255,7 +321,7 @@ export function VideoQueue() {
           <EmptyState
             icon={<Film className="h-5 w-5" />}
             title="Nenhum vídeo enviado"
-            description="Envie um vídeo acima para vê-lo aparecer aqui com status Pendente."
+            description="Envie um vídeo acima para vê-lo aparecer aqui com status PENDENTE."
           />
         ) : (
           <ul className="divide-y divide-border/60">

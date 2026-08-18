@@ -49,6 +49,42 @@ export type Database = {
           },
         ]
       }
+      arquivos: {
+        Row: {
+          created_at: string
+          filename: string
+          hash_sha256: string
+          id: string
+          size_bytes: number | null
+          status: Database["public"]["Enums"]["arquivo_status"]
+          storage_path: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          filename: string
+          hash_sha256: string
+          id?: string
+          size_bytes?: number | null
+          status?: Database["public"]["Enums"]["arquivo_status"]
+          storage_path?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          filename?: string
+          hash_sha256?: string
+          id?: string
+          size_bytes?: number | null
+          status?: Database["public"]["Enums"]["arquivo_status"]
+          storage_path?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       logs: {
         Row: {
           created_at: string
@@ -86,9 +122,10 @@ export type Database = {
       }
       videos: {
         Row: {
+          arquivo_id: string
           created_at: string
           filename: string
-          hash: string
+          hash: string | null
           id: string
           original_path: string | null
           status: Database["public"]["Enums"]["video_status"]
@@ -96,9 +133,10 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          arquivo_id: string
           created_at?: string
           filename: string
-          hash: string
+          hash?: string | null
           id?: string
           original_path?: string | null
           status?: Database["public"]["Enums"]["video_status"]
@@ -106,16 +144,25 @@ export type Database = {
           user_id: string
         }
         Update: {
+          arquivo_id?: string
           created_at?: string
           filename?: string
-          hash?: string
+          hash?: string | null
           id?: string
           original_path?: string | null
           status?: Database["public"]["Enums"]["video_status"]
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "videos_arquivo_id_fkey"
+            columns: ["arquivo_id"]
+            isOneToOne: false
+            referencedRelation: "arquivos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -125,14 +172,15 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      arquivo_status: "PENDENTE_UPLOAD" | "UPLOAD_CONFIRMADO"
       video_status:
-        | "Pendente"
-        | "Processando"
-        | "Pronto"
-        | "Agendado"
-        | "Publicando"
-        | "Publicado"
-        | "Com Erro"
+        | "PENDENTE"
+        | "PROCESSANDO"
+        | "PRONTO"
+        | "AGENDADO"
+        | "PUBLICANDO"
+        | "PUBLICADO"
+        | "COM_ERRO"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -260,14 +308,15 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      arquivo_status: ["PENDENTE_UPLOAD", "UPLOAD_CONFIRMADO"],
       video_status: [
-        "Pendente",
-        "Processando",
-        "Pronto",
-        "Agendado",
-        "Publicando",
-        "Publicado",
-        "Com Erro",
+        "PENDENTE",
+        "PROCESSANDO",
+        "PRONTO",
+        "AGENDADO",
+        "PUBLICANDO",
+        "PUBLICADO",
+        "COM_ERRO",
       ],
     },
   },
