@@ -24,14 +24,49 @@ export async function sha256File(file: File): Promise<string> {
     .join("");
 }
 
-export async function findDuplicate(hash: string, userId: string) {
+/** Busca o arquivo físico do usuário pelo hash do conteúdo. */
+export async function findArquivoByHash(hash: string, userId: string) {
   const { data, error } = await supabase
-    .from("videos")
-    .select("id")
+    .from("arquivos")
+    .select("id, filename, storage_path, status, created_at")
     .eq("user_id", userId)
-    .eq("hash", hash)
+    .eq("hash_sha256", hash)
     .maybeSingle();
   if (error) throw error;
+  return data;
+}
+
+/** Conta entradas operacionais (videos) ligadas a um arquivo. */
+export async function countVideosForArquivo(arquivoId: string) {
+  const { count, error } = await supabase
+    .from("videos")
+    .select("id", { count: "exact", head: true })
+    .eq("arquivo_id", arquivoId);
+  if (error) throw error;
+  return count ?? 0;
+}
+
+/** Cria uma nova entrada operacional na fila para um arquivo já existente. */
+export async function createVideoEntry(options: {
+  arquivoId: string;
+  userId: string;
+  filename: string;
+  storagePath: string | null;
+  hash: string;
+}) {
+  const { data, error } = await supabase
+    .from("videos")
+    .insert({
+      user_id: options.userId,
+      arquivo_id: options.arquivoId,
+      filename: options.filename,
+      hash: options.hash,
+      original_path: options.storagePath,
+      status: "PENDENTE",
+    })
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
   return data;
 }
 
@@ -50,6 +85,7 @@ export function uploadToStorage(options: {
     xhr.open("POST", `${SUPABASE_URL}/storage/v1/object/${RAW_BUCKET}/${path}`);
     xhr.setRequestHeader("authorization", `Bearer ${accessToken}`);
     xhr.setRequestHeader("apikey", SUPABASE_KEY);
+    // upsert evita objetos duplicados no bucket para o mesmo hash
     xhr.setRequestHeader("x-upsert", "true");
     if (file.type) xhr.setRequestHeader("content-type", file.type);
 
@@ -82,16 +118,28 @@ export async function removeFromStorage(path: string) {
   }
 }
 
-export class DuplicateVideoError extends Error {
-  constructor() {
-    super("Este vídeo já foi enviado anteriormente.");
-    this.name = "DuplicateVideoError";
+export type DuplicateInfo = {
+  arquivoId: string;
+  hash: string;
+  filename: string;
+  storagePath: string | null;
+  existingEntries: number;
+  newFilename: string;
+};
+
+/** Arquivo físico já existe: a UI decide se cria uma nova entrada na fila. */
+export class DuplicateFileError extends Error {
+  info: DuplicateInfo;
+  constructor(info: DuplicateInfo) {
+    super("Este arquivo já existe (mesmo SHA-256).");
+    this.name = "DuplicateFileError";
+    this.info = info;
   }
 }
 
 /**
  * Fluxo completo de um arquivo:
- * SHA-256 → duplicidade → upload → INSERT (com limpeza em falha parcial).
+ * SHA-256 → arquivo (identidade física) → upload → confirmação → entrada operacional em videos.
  */
 export async function processVideoFile(options: {
   file: File;
@@ -109,33 +157,112 @@ export async function processVideoFile(options: {
 
   onStage("hashing");
   const hash = await sha256File(file);
-
-  onStage("checking");
-  if (await findDuplicate(hash, userId)) throw new DuplicateVideoError();
-
   const path = `${userId}/${hash}.${fileExtension(file.name)}`;
 
-  onStage("uploading");
-  await uploadToStorage({ path, file, accessToken, onProgress, signal });
+  onStage("checking");
+  let arquivo = await findArquivoByHash(hash, userId);
+  let arquivoCriadoAgora = false;
 
-  onStage("saving");
-  const { data, error } = await supabase
-    .from("videos")
-    .insert({
-      user_id: userId,
-      filename: file.name,
+  if (arquivo && arquivo.status === "UPLOAD_CONFIRMADO") {
+    const entries = await countVideosForArquivo(arquivo.id);
+    if (entries === 0) {
+      // Estado inconsistente: arquivo confirmado sem entrada operacional → repara criando uma.
+      onStage("saving");
+      return createVideoEntry({
+        arquivoId: arquivo.id,
+        userId,
+        filename: file.name,
+        storagePath: arquivo.storage_path,
+        hash,
+      });
+    }
+    throw new DuplicateFileError({
+      arquivoId: arquivo.id,
       hash,
-      original_path: path,
-      status: "Pendente",
-    })
-    .select()
-    .single();
-
-  if (error) {
-    await removeFromStorage(path);
-    if (error.code === "23505") throw new DuplicateVideoError();
-    throw new Error(error.message);
+      filename: arquivo.filename,
+      storagePath: arquivo.storage_path,
+      existingEntries: entries,
+      newFilename: file.name,
+    });
   }
 
-  return data;
+  if (!arquivo) {
+    const { data, error } = await supabase
+      .from("arquivos")
+      .insert({
+        user_id: userId,
+        hash_sha256: hash,
+        filename: file.name,
+        storage_path: path,
+        size_bytes: file.size,
+        status: "PENDENTE_UPLOAD",
+      })
+      .select("id, filename, storage_path, status, created_at")
+      .single();
+
+    if (error) {
+      // 23505: corrida — outro envio simultâneo criou o mesmo arquivo.
+      if (error.code === "23505") {
+        const existing = await findArquivoByHash(hash, userId);
+        if (!existing) throw new Error(error.message);
+        const entries = await countVideosForArquivo(existing.id);
+        if (entries > 0) {
+          throw new DuplicateFileError({
+            arquivoId: existing.id,
+            hash,
+            filename: existing.filename,
+            storagePath: existing.storage_path,
+            existingEntries: entries,
+            newFilename: file.name,
+          });
+        }
+        arquivo = existing;
+      } else {
+        throw new Error(error.message);
+      }
+    } else {
+      arquivo = data;
+      arquivoCriadoAgora = true;
+    }
+  }
+
+  onStage("uploading");
+  try {
+    await uploadToStorage({ path, file, accessToken, onProgress, signal });
+  } catch (error) {
+    if (arquivoCriadoAgora) {
+      await supabase.from("arquivos").delete().eq("id", arquivo.id);
+    }
+    throw error;
+  }
+
+  const { error: confirmError } = await supabase
+    .from("arquivos")
+    .update({ status: "UPLOAD_CONFIRMADO", storage_path: path, size_bytes: file.size })
+    .eq("id", arquivo.id);
+  if (confirmError) {
+    if (arquivoCriadoAgora) {
+      await removeFromStorage(path);
+      await supabase.from("arquivos").delete().eq("id", arquivo.id);
+    }
+    throw new Error(confirmError.message);
+  }
+
+  onStage("saving");
+  try {
+    return await createVideoEntry({
+      arquivoId: arquivo.id,
+      userId,
+      filename: file.name,
+      storagePath: path,
+      hash,
+    });
+  } catch (error) {
+    if (arquivoCriadoAgora) {
+      await removeFromStorage(path);
+      await supabase.from("arquivos").delete().eq("id", arquivo.id);
+    }
+    throw error;
+  }
 }
+
