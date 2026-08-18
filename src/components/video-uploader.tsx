@@ -321,7 +321,7 @@ export function VideoQueue() {
           <EmptyState
             icon={<Film className="h-5 w-5" />}
             title="Nenhum vídeo enviado"
-            description="Envie um vídeo acima para vê-lo aparecer aqui com status Pendente."
+            description="Envie um vídeo acima para vê-lo aparecer aqui com status PENDENTE."
           />
         ) : (
           <ul className="divide-y divide-border/60">
