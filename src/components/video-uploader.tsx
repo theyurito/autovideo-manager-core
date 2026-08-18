@@ -257,10 +257,33 @@ export function VideoUploader() {
             ))}
           </ul>
         ) : null}
+
+        <Dialog open={!!duplicate} onOpenChange={(open) => !open && setDuplicate(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Arquivo já existe</DialogTitle>
+              <DialogDescription>
+                O conteúdo de <strong>{duplicate?.newFilename}</strong> tem o mesmo SHA-256 de{" "}
+                <strong>{duplicate?.filename}</strong>, já armazenado ({duplicate?.existingEntries}{" "}
+                entrada(s) na fila). Nenhum upload novo foi feito. Você pode criar uma nova entrada
+                operacional reutilizando o mesmo arquivo.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setDuplicate(null)} disabled={creating}>
+                Cancelar
+              </Button>
+              <Button onClick={confirmNewEntry} disabled={creating}>
+                {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : null} Criar nova entrada
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   );
 }
+
 
 export function VideoQueue() {
   const { userId } = useAuth();
