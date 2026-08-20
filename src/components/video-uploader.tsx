@@ -312,7 +312,7 @@ export function VideoQueue({
         ) : isError ? (
           <ErrorState
             description="Não foi possível carregar a fila de vídeos."
-            onRetry={onRetry}
+            {...(onRetry ? { onRetry } : {})}
           />
         ) : videos.length === 0 ? (
           <EmptyState

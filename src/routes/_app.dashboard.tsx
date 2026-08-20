@@ -33,29 +33,37 @@ export const Route = createFileRoute("/_app/dashboard")({
   component: DashboardPage,
 });
 
-type View = "empty" | "loading" | "error";
-
 function DashboardPage() {
-  const [view, setView] = useState<View>("empty");
   const [open, setOpen] = useState(false);
+  const query = useVideos();
+  const videos = query.data ?? [];
 
-  function simulateRefresh() {
-    setView("loading");
-    setTimeout(() => {
-      setView("empty");
-      toast.success("Painel atualizado", { description: "Nenhum lote em execução." });
-    }, 1000);
-  }
+  const metrics = [
+    {
+      label: "Na fila",
+      value: videos.filter((v) => v.status === "PENDENTE" || v.status === "PROCESSANDO").length,
+    },
+    {
+      label: "Prontos / Agendados",
+      value: videos.filter((v) => v.status === "PRONTO" || v.status === "AGENDADO").length,
+    },
+    { label: "Publicados", value: videos.filter((v) => v.status === "PUBLICADO").length },
+    { label: "Falhas", value: videos.filter((v) => v.status === "COM_ERRO").length },
+  ];
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-8">
       <PageHeader
         title="Dashboard"
-        description="Estrutura inicial. As métricas de produção serão conectadas em uma próxima etapa."
+        description="Fila de vídeos e métricas em tempo real."
         actions={
           <>
-            <Button variant="outline" onClick={simulateRefresh} disabled={view === "loading"}>
-              <RefreshCw className={view === "loading" ? "animate-spin" : ""} /> Atualizar
+            <Button
+              variant="outline"
+              onClick={() => query.refetch()}
+              disabled={query.isFetching}
+            >
+              <RefreshCw className={query.isFetching ? "animate-spin" : ""} /> Atualizar
             </Button>
             <Dialog open={open} onOpenChange={setOpen}>
               <DialogTrigger asChild>
