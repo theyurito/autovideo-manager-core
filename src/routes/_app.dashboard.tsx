@@ -5,7 +5,7 @@ import { toast } from "sonner";
 
 import { PageHeader } from "@/components/page-header";
 import { VideoQueue, VideoUploader } from "@/components/video-uploader";
-import { Badge } from "@/components/ui/badge";
+import { useVideos } from "@/lib/use-videos";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -99,14 +99,15 @@ function DashboardPage() {
       />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {["Lotes ativos", "Vídeos gerados", "Templates", "Falhas"].map((label) => (
-          <Card key={label}>
+        {metrics.map((metric) => (
+          <Card key={metric.label}>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                {metric.label}
+              </CardTitle>
             </CardHeader>
             <CardContent className="flex items-end justify-between">
-              <span className="font-display text-3xl font-semibold">0</span>
-              <Badge variant="secondary">sem dados</Badge>
+              <span className="font-display text-3xl font-semibold">{metric.value}</span>
             </CardContent>
           </Card>
         ))}
@@ -114,7 +115,13 @@ function DashboardPage() {
 
       <VideoUploader />
 
-      <VideoQueue />
+      <VideoQueue
+        videos={videos}
+        isLoading={query.isLoading}
+        isError={query.isError}
+        onRetry={() => void query.refetch()}
+      />
+
 
     </div>
   );
