@@ -5,7 +5,7 @@ import { toast } from "sonner";
 
 import { PageHeader } from "@/components/page-header";
 import { VideoQueue, VideoUploader } from "@/components/video-uploader";
-import { Badge } from "@/components/ui/badge";
+import { useVideos } from "@/lib/use-videos";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -33,29 +33,37 @@ export const Route = createFileRoute("/_app/dashboard")({
   component: DashboardPage,
 });
 
-type View = "empty" | "loading" | "error";
-
 function DashboardPage() {
-  const [view, setView] = useState<View>("empty");
   const [open, setOpen] = useState(false);
+  const query = useVideos();
+  const videos = query.data ?? [];
 
-  function simulateRefresh() {
-    setView("loading");
-    setTimeout(() => {
-      setView("empty");
-      toast.success("Painel atualizado", { description: "Nenhum lote em execução." });
-    }, 1000);
-  }
+  const metrics = [
+    {
+      label: "Na fila",
+      value: videos.filter((v) => v.status === "PENDENTE" || v.status === "PROCESSANDO").length,
+    },
+    {
+      label: "Prontos / Agendados",
+      value: videos.filter((v) => v.status === "PRONTO" || v.status === "AGENDADO").length,
+    },
+    { label: "Publicados", value: videos.filter((v) => v.status === "PUBLICADO").length },
+    { label: "Falhas", value: videos.filter((v) => v.status === "COM_ERRO").length },
+  ];
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-8">
       <PageHeader
         title="Dashboard"
-        description="Estrutura inicial. As métricas de produção serão conectadas em uma próxima etapa."
+        description="Fila de vídeos e métricas em tempo real."
         actions={
           <>
-            <Button variant="outline" onClick={simulateRefresh} disabled={view === "loading"}>
-              <RefreshCw className={view === "loading" ? "animate-spin" : ""} /> Atualizar
+            <Button
+              variant="outline"
+              onClick={() => query.refetch()}
+              disabled={query.isFetching}
+            >
+              <RefreshCw className={query.isFetching ? "animate-spin" : ""} /> Atualizar
             </Button>
             <Dialog open={open} onOpenChange={setOpen}>
               <DialogTrigger asChild>
@@ -91,14 +99,15 @@ function DashboardPage() {
       />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {["Lotes ativos", "Vídeos gerados", "Templates", "Falhas"].map((label) => (
-          <Card key={label}>
+        {metrics.map((metric) => (
+          <Card key={metric.label}>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                {metric.label}
+              </CardTitle>
             </CardHeader>
             <CardContent className="flex items-end justify-between">
-              <span className="font-display text-3xl font-semibold">0</span>
-              <Badge variant="secondary">sem dados</Badge>
+              <span className="font-display text-3xl font-semibold">{metric.value}</span>
             </CardContent>
           </Card>
         ))}
@@ -106,7 +115,13 @@ function DashboardPage() {
 
       <VideoUploader />
 
-      <VideoQueue />
+      <VideoQueue
+        videos={videos}
+        isLoading={query.isLoading}
+        isError={query.isError}
+        onRetry={() => void query.refetch()}
+      />
+
 
     </div>
   );
