@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, CheckCircle2, CloudUpload, Film, Loader2, UploadCloud } from "lucide-react";
 import { toast } from "sonner";
 
@@ -16,9 +16,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
+import { STATUS_CLASS, STATUS_LABEL, type VideoRow } from "@/lib/use-videos";
 import {
   createVideoEntry,
   DuplicateFileError,
@@ -285,39 +285,36 @@ export function VideoUploader() {
 }
 
 
-export function VideoQueue() {
-  const { userId } = useAuth();
-
-  const query = useQuery({
-    queryKey: ["videos", userId],
-    enabled: !!userId,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("videos")
-        .select("id, filename, status, original_path, created_at")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data;
-    },
-  });
-
+export function VideoQueue({
+  videos,
+  isLoading,
+  isError,
+  onRetry,
+}: {
+  videos: VideoRow[];
+  isLoading: boolean;
+  isError?: boolean;
+  onRetry?: () => void;
+}) {
   return (
     <Card>
       <CardHeader className="flex-row items-center justify-between gap-2 space-y-0">
         <CardTitle className="text-base">Fila de vídeos</CardTitle>
-        <Button variant="ghost" size="sm" onClick={() => query.refetch()}>
-          Atualizar
-        </Button>
+        {onRetry ? (
+          <Button variant="ghost" size="sm" onClick={onRetry}>
+            Atualizar
+          </Button>
+        ) : null}
       </CardHeader>
       <CardContent>
-        {query.isLoading ? (
+        {isLoading ? (
           <Loader label="Carregando fila..." />
-        ) : query.isError ? (
+        ) : isError ? (
           <ErrorState
             description="Não foi possível carregar a fila de vídeos."
-            onRetry={() => query.refetch()}
+            onRetry={onRetry}
           />
-        ) : !query.data || query.data.length === 0 ? (
+        ) : videos.length === 0 ? (
           <EmptyState
             icon={<Film className="h-5 w-5" />}
             title="Nenhum vídeo enviado"
@@ -325,14 +322,21 @@ export function VideoQueue() {
           />
         ) : (
           <ul className="divide-y divide-border/60">
-            {query.data.map((video) => (
+            {videos.map((video) => (
               <li key={video.id} className="flex items-center gap-3 py-3">
                 <Film className="h-4 w-4 shrink-0 text-muted-foreground" />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">{video.filename}</p>
                   <p className="truncate text-xs text-muted-foreground">{video.original_path}</p>
                 </div>
-                <Badge variant="secondary">{video.status}</Badge>
+                <span
+                  className={cn(
+                    "shrink-0 rounded-md border px-2 py-0.5 text-xs font-medium",
+                    STATUS_CLASS[video.status],
+                  )}
+                >
+                  {STATUS_LABEL[video.status]}
+                </span>
               </li>
             ))}
           </ul>
