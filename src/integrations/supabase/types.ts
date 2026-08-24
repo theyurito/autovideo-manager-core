@@ -127,7 +127,12 @@ export type Database = {
           filename: string
           hash: string | null
           id: string
+          last_error: string | null
           original_path: string | null
+          processed_path: string | null
+          processing_attempts: number
+          processing_finished_at: string | null
+          processing_started_at: string | null
           status: Database["public"]["Enums"]["video_status"]
           updated_at: string
           user_id: string
@@ -138,7 +143,12 @@ export type Database = {
           filename: string
           hash?: string | null
           id?: string
+          last_error?: string | null
           original_path?: string | null
+          processed_path?: string | null
+          processing_attempts?: number
+          processing_finished_at?: string | null
+          processing_started_at?: string | null
           status?: Database["public"]["Enums"]["video_status"]
           updated_at?: string
           user_id: string
@@ -149,7 +159,12 @@ export type Database = {
           filename?: string
           hash?: string | null
           id?: string
+          last_error?: string | null
           original_path?: string | null
+          processed_path?: string | null
+          processing_attempts?: number
+          processing_finished_at?: string | null
+          processing_started_at?: string | null
           status?: Database["public"]["Enums"]["video_status"]
           updated_at?: string
           user_id?: string
