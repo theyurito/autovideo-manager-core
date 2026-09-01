@@ -9,7 +9,10 @@
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "worker:health": "bun --env-file=.env.worker run worker/health.ts",
+    "worker:dry": "bun --env-file=.env.worker run worker/dry-run.ts",
+    "worker:typecheck": "tsc --noEmit -p worker/tsconfig.json"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

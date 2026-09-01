@@ -30,3 +30,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Worker secrets
+.env.worker
+.env.worker.local

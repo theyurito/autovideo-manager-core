@@ -184,7 +184,27 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      claim_next_video_for_processing: {
+        Args: { p_max_attempts?: number; p_user_id: string }
+        Returns: {
+          arquivo_id: string
+          id: string
+          processing_attempts: number
+          user_id: string
+        }[]
+      }
+      recover_stale_video_processing: {
+        Args: {
+          p_max_attempts?: number
+          p_stale_minutes?: number
+          p_user_id: string
+        }
+        Returns: {
+          id: string
+          new_status: Database["public"]["Enums"]["video_status"]
+          processing_attempts: number
+        }[]
+      }
     }
     Enums: {
       arquivo_status: "PENDENTE_UPLOAD" | "UPLOAD_CONFIRMADO"
