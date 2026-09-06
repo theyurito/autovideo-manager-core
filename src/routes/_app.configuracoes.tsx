@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { Loader2, Save } from "lucide-react";
+import { Check, Loader2, Save } from "lucide-react";
 import { toast } from "sonner";
 
 import { PageHeader } from "@/components/page-header";
@@ -18,6 +19,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAuth } from "@/lib/auth";
+import {
+  checkCloudConvertConnection,
+  type CloudConvertHealthResult,
+} from "@/lib/cloudconvert.functions";
 
 export const Route = createFileRoute("/_app/configuracoes")({
   head: () => ({
@@ -41,6 +46,9 @@ function SettingsPage() {
   const [quality, setQuality] = useState("1080p");
   const [notify, setNotify] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [cloudConvertTest, setCloudConvertTest] = useState<CloudConvertHealthResult | null>(null);
+  const [testingCloudConvert, setTestingCloudConvert] = useState(false);
+  const checkCloudConvert = useServerFn(checkCloudConvertConnection);
 
   function save() {
     setSaving(true);
@@ -48,6 +56,23 @@ function SettingsPage() {
       setSaving(false);
       toast.success("Preferências salvas", { description: "Apenas em memória nesta etapa." });
     }, 900);
+  }
+
+  async function testCloudConvert() {
+    setTestingCloudConvert(true);
+    try {
+      const result = await checkCloudConvert();
+      setCloudConvertTest(result);
+      if (result.ok) {
+        toast.success("CloudConvert conectado");
+      } else {
+        toast.error("Falha na conexão", { description: result.error });
+      }
+    } catch (err) {
+      toast.error("Erro inesperado", { description: String(err) });
+    } finally {
+      setTestingCloudConvert(false);
+    }
   }
 
   return (
@@ -112,6 +137,43 @@ function SettingsPage() {
                 toast.success(v ? "Notificações ativadas" : "Notificações desativadas");
               }}
             />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Integração CloudConvert</CardTitle>
+          <CardDescription>Verifique se a chave da API está acessível no servidor.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-medium">Status da conexão</p>
+              <p className="text-sm text-muted-foreground">
+                {cloudConvertTest === null
+                  ? "Clique para testar o acesso server-side."
+                  : cloudConvertTest.ok
+                    ? "Conectado com sucesso."
+                    : cloudConvertTest.error}
+              </p>
+            </div>
+            <Button
+              variant="neon"
+              size="sm"
+              onClick={testCloudConvert}
+              disabled={testingCloudConvert}
+            >
+              {testingCloudConvert ? (
+                <>
+                  <Loader2 className="animate-spin" /> Testando...
+                </>
+              ) : (
+                <>
+                  <Check /> Testar conexão
+                </>
+              )}
+            </Button>
           </div>
         </CardContent>
       </Card>
