@@ -1,0 +1,2 @@
+ALTER TABLE public.videos ADD COLUMN IF NOT EXISTS processing_job_id TEXT NULL;
+CREATE INDEX IF NOT EXISTS idx_videos_processing_job_id ON public.videos (processing_job_id) WHERE processing_job_id IS NOT NULL;
