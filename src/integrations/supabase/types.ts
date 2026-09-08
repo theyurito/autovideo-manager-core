@@ -132,6 +132,7 @@ export type Database = {
           processed_path: string | null
           processing_attempts: number
           processing_finished_at: string | null
+          processing_job_id: string | null
           processing_started_at: string | null
           status: Database["public"]["Enums"]["video_status"]
           updated_at: string
@@ -148,6 +149,7 @@ export type Database = {
           processed_path?: string | null
           processing_attempts?: number
           processing_finished_at?: string | null
+          processing_job_id?: string | null
           processing_started_at?: string | null
           status?: Database["public"]["Enums"]["video_status"]
           updated_at?: string
@@ -164,6 +166,7 @@ export type Database = {
           processed_path?: string | null
           processing_attempts?: number
           processing_finished_at?: string | null
+          processing_job_id?: string | null
           processing_started_at?: string | null
           status?: Database["public"]["Enums"]["video_status"]
           updated_at?: string

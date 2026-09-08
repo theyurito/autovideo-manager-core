@@ -23,6 +23,7 @@ import {
   checkCloudConvertConnection,
   type CloudConvertHealthResult,
 } from "@/lib/cloudconvert.functions";
+import { startVideoProcessing } from "@/lib/video-processing.functions";
 
 export const Route = createFileRoute("/_app/configuracoes")({
   head: () => ({
@@ -49,6 +50,34 @@ function SettingsPage() {
   const [cloudConvertTest, setCloudConvertTest] = useState<CloudConvertHealthResult | null>(null);
   const [testingCloudConvert, setTestingCloudConvert] = useState(false);
   const checkCloudConvert = useServerFn(checkCloudConvertConnection);
+  const [testVideoId, setTestVideoId] = useState("");
+  const [startingProcessing, setStartingProcessing] = useState(false);
+  const [processingMessage, setProcessingMessage] = useState<string | null>(null);
+  const startProcessing = useServerFn(startVideoProcessing);
+
+  async function runProcessing() {
+    setStartingProcessing(true);
+    setProcessingMessage(null);
+    try {
+      const result = await startProcessing({ data: { videoId: testVideoId.trim() } });
+      if (!result.ok) {
+        setProcessingMessage(result.error);
+        toast.error(result.error);
+      } else if (result.alreadyStarted) {
+        setProcessingMessage(result.message);
+        toast.info(result.message);
+      } else {
+        setProcessingMessage(`Processamento iniciado (job ${result.jobId}).`);
+        toast.success("Processamento iniciado.");
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      setProcessingMessage(message);
+      toast.error(message);
+    } finally {
+      setStartingProcessing(false);
+    }
+  }
 
   function save() {
     setSaving(true);
@@ -172,6 +201,43 @@ function SettingsPage() {
                 <>
                   <Check /> Testar conexão
                 </>
+              )}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Teste de processamento</CardTitle>
+          <CardDescription>
+            Inicia o processamento de um vídeo pendente informando o identificador dele.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-2">
+            <Label htmlFor="videoId">ID do vídeo</Label>
+            <Input
+              id="videoId"
+              value={testVideoId}
+              onChange={(e) => setTestVideoId(e.target.value)}
+              placeholder="00000000-0000-0000-0000-000000000000"
+            />
+          </div>
+          <div className="flex items-center justify-between gap-4">
+            <p className="text-sm text-muted-foreground">{processingMessage ?? "Aguardando."}</p>
+            <Button
+              variant="neon"
+              size="sm"
+              onClick={runProcessing}
+              disabled={startingProcessing || testVideoId.trim().length < 10}
+            >
+              {startingProcessing ? (
+                <>
+                  <Loader2 className="animate-spin" /> Iniciando...
+                </>
+              ) : (
+                "Iniciar processamento"
               )}
             </Button>
           </div>
