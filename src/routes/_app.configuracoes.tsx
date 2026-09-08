@@ -23,6 +23,7 @@ import {
   checkCloudConvertConnection,
   type CloudConvertHealthResult,
 } from "@/lib/cloudconvert.functions";
+import { startVideoProcessing } from "@/lib/video-processing.functions";
 
 export const Route = createFileRoute("/_app/configuracoes")({
   head: () => ({
