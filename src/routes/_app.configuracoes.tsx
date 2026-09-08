@@ -178,6 +178,43 @@ function SettingsPage() {
         </CardContent>
       </Card>
 
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Teste de processamento</CardTitle>
+          <CardDescription>
+            Inicia o processamento de um vídeo pendente informando o identificador dele.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-2">
+            <Label htmlFor="videoId">ID do vídeo</Label>
+            <Input
+              id="videoId"
+              value={testVideoId}
+              onChange={(e) => setTestVideoId(e.target.value)}
+              placeholder="00000000-0000-0000-0000-000000000000"
+            />
+          </div>
+          <div className="flex items-center justify-between gap-4">
+            <p className="text-sm text-muted-foreground">{processingMessage ?? "Aguardando."}</p>
+            <Button
+              variant="neon"
+              size="sm"
+              onClick={runProcessing}
+              disabled={startingProcessing || testVideoId.trim().length < 10}
+            >
+              {startingProcessing ? (
+                <>
+                  <Loader2 className="animate-spin" /> Iniciando...
+                </>
+              ) : (
+                "Iniciar processamento"
+              )}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="flex justify-end">
         <Button variant="neon" onClick={save} disabled={saving || workspace.trim().length === 0}>
           {saving ? (
