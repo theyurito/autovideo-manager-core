@@ -16,6 +16,7 @@ import { Route as AppAutomationFlowRouteImport } from './routes/_app.automation-
 import { Route as AppConfiguracoesRouteImport } from './routes/_app.configuracoes'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
 import { Route as AppTemplatesRouteImport } from './routes/_app.templates'
+import { Route as ApiPublicWebhooksCloudconvertRouteImport } from './routes/api/public/webhooks/cloudconvert'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -51,6 +52,12 @@ const AppTemplatesRoute = AppTemplatesRouteImport.update({
   path: '/templates',
   getParentRoute: () => AppRoute,
 } as any)
+const ApiPublicWebhooksCloudconvertRoute =
+  ApiPublicWebhooksCloudconvertRouteImport.update({
+    id: '/api/public/webhooks/cloudconvert',
+    path: '/api/public/webhooks/cloudconvert',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -59,6 +66,7 @@ export interface FileRoutesByFullPath {
   '/configuracoes': typeof AppConfiguracoesRoute
   '/dashboard': typeof AppDashboardRoute
   '/templates': typeof AppTemplatesRoute
+  '/api/public/webhooks/cloudconvert': typeof ApiPublicWebhooksCloudconvertRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -67,6 +75,7 @@ export interface FileRoutesByTo {
   '/configuracoes': typeof AppConfiguracoesRoute
   '/dashboard': typeof AppDashboardRoute
   '/templates': typeof AppTemplatesRoute
+  '/api/public/webhooks/cloudconvert': typeof ApiPublicWebhooksCloudconvertRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -77,6 +86,7 @@ export interface FileRoutesById {
   '/_app/configuracoes': typeof AppConfiguracoesRoute
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/templates': typeof AppTemplatesRoute
+  '/api/public/webhooks/cloudconvert': typeof ApiPublicWebhooksCloudconvertRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -87,6 +97,7 @@ export interface FileRouteTypes {
     | '/configuracoes'
     | '/dashboard'
     | '/templates'
+    | '/api/public/webhooks/cloudconvert'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -95,6 +106,7 @@ export interface FileRouteTypes {
     | '/configuracoes'
     | '/dashboard'
     | '/templates'
+    | '/api/public/webhooks/cloudconvert'
   id:
     | '__root__'
     | '/'
@@ -104,12 +116,14 @@ export interface FileRouteTypes {
     | '/_app/configuracoes'
     | '/_app/dashboard'
     | '/_app/templates'
+    | '/api/public/webhooks/cloudconvert'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
   LoginRoute: typeof LoginRoute
+  ApiPublicWebhooksCloudconvertRoute: typeof ApiPublicWebhooksCloudconvertRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -163,6 +177,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppTemplatesRouteImport
       parentRoute: typeof AppRoute
     }
+    '/api/public/webhooks/cloudconvert': {
+      id: '/api/public/webhooks/cloudconvert'
+      path: '/api/public/webhooks/cloudconvert'
+      fullPath: '/api/public/webhooks/cloudconvert'
+      preLoaderRoute: typeof ApiPublicWebhooksCloudconvertRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -186,6 +207,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
   LoginRoute: LoginRoute,
+  ApiPublicWebhooksCloudconvertRoute: ApiPublicWebhooksCloudconvertRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
