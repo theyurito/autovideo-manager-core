@@ -49,6 +49,34 @@ function SettingsPage() {
   const [cloudConvertTest, setCloudConvertTest] = useState<CloudConvertHealthResult | null>(null);
   const [testingCloudConvert, setTestingCloudConvert] = useState(false);
   const checkCloudConvert = useServerFn(checkCloudConvertConnection);
+  const [testVideoId, setTestVideoId] = useState("");
+  const [startingProcessing, setStartingProcessing] = useState(false);
+  const [processingMessage, setProcessingMessage] = useState<string | null>(null);
+  const startProcessing = useServerFn(startVideoProcessing);
+
+  async function runProcessing() {
+    setStartingProcessing(true);
+    setProcessingMessage(null);
+    try {
+      const result = await startProcessing({ data: { videoId: testVideoId.trim() } });
+      if (!result.ok) {
+        setProcessingMessage(result.error);
+        toast.error(result.error);
+      } else if (result.alreadyStarted) {
+        setProcessingMessage(result.message);
+        toast.info(result.message);
+      } else {
+        setProcessingMessage(`Processamento iniciado (job ${result.jobId}).`);
+        toast.success("Processamento iniciado.");
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      setProcessingMessage(message);
+      toast.error(message);
+    } finally {
+      setStartingProcessing(false);
+    }
+  }
 
   function save() {
     setSaving(true);
