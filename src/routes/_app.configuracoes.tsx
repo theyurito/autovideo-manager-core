@@ -247,20 +247,36 @@ function SettingsPage() {
           </div>
           <div className="flex items-center justify-between gap-4">
             <p className="text-sm text-muted-foreground">{processingMessage ?? "Aguardando."}</p>
-            <Button
-              variant="neon"
-              size="sm"
-              onClick={runProcessing}
-              disabled={startingProcessing || testVideoId.trim().length < 10}
-            >
-              {startingProcessing ? (
-                <>
-                  <Loader2 className="animate-spin" /> Iniciando...
-                </>
-              ) : (
-                "Iniciar processamento"
-              )}
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="neon"
+                size="sm"
+                onClick={runProcessing}
+                disabled={startingProcessing || reconciling || testVideoId.trim().length < 10}
+              >
+                {startingProcessing ? (
+                  <>
+                    <Loader2 className="animate-spin" /> Iniciando...
+                  </>
+                ) : (
+                  "Iniciar processamento"
+                )}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={runReconcile}
+                disabled={reconciling || startingProcessing || testVideoId.trim().length < 10}
+              >
+                {reconciling ? (
+                  <>
+                    <Loader2 className="animate-spin" /> Verificando...
+                  </>
+                ) : (
+                  "Verificar resultado"
+                )}
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
