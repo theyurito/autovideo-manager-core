@@ -24,6 +24,7 @@ import {
   type CloudConvertHealthResult,
 } from "@/lib/cloudconvert.functions";
 import { startVideoProcessing } from "@/lib/video-processing.functions";
+import { reconcileVideoProcessing } from "@/lib/video-reconcile.functions";
 
 export const Route = createFileRoute("/_app/configuracoes")({
   head: () => ({
@@ -54,6 +55,26 @@ function SettingsPage() {
   const [startingProcessing, setStartingProcessing] = useState(false);
   const [processingMessage, setProcessingMessage] = useState<string | null>(null);
   const startProcessing = useServerFn(startVideoProcessing);
+  const [reconciling, setReconciling] = useState(false);
+  const reconcile = useServerFn(reconcileVideoProcessing);
+
+  async function runReconcile() {
+    setReconciling(true);
+    setProcessingMessage(null);
+    try {
+      const result = await reconcile({ data: { videoId: testVideoId.trim() } });
+      setProcessingMessage(result.message);
+      if (!result.ok) toast.error(result.message);
+      else if (result.outcome === "READY") toast.success(result.message);
+      else toast.info(result.message);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      setProcessingMessage(message);
+      toast.error(message);
+    } finally {
+      setReconciling(false);
+    }
+  }
 
   async function runProcessing() {
     setStartingProcessing(true);
@@ -226,20 +247,36 @@ function SettingsPage() {
           </div>
           <div className="flex items-center justify-between gap-4">
             <p className="text-sm text-muted-foreground">{processingMessage ?? "Aguardando."}</p>
-            <Button
-              variant="neon"
-              size="sm"
-              onClick={runProcessing}
-              disabled={startingProcessing || testVideoId.trim().length < 10}
-            >
-              {startingProcessing ? (
-                <>
-                  <Loader2 className="animate-spin" /> Iniciando...
-                </>
-              ) : (
-                "Iniciar processamento"
-              )}
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="neon"
+                size="sm"
+                onClick={runProcessing}
+                disabled={startingProcessing || reconciling || testVideoId.trim().length < 10}
+              >
+                {startingProcessing ? (
+                  <>
+                    <Loader2 className="animate-spin" /> Iniciando...
+                  </>
+                ) : (
+                  "Iniciar processamento"
+                )}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={runReconcile}
+                disabled={reconciling || startingProcessing || testVideoId.trim().length < 10}
+              >
+                {reconciling ? (
+                  <>
+                    <Loader2 className="animate-spin" /> Verificando...
+                  </>
+                ) : (
+                  "Verificar resultado"
+                )}
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
