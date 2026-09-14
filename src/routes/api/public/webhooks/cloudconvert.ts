@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { createHmac, timingSafeEqual } from "crypto";
 
+// Header assinado pelo CloudConvert (HMAC-SHA256 do corpo cru).
 const SIGNATURE_HEADER = "CloudConvert-Signature";
 
 function isValidSignature(rawBody: string, signature: string, secret: string): boolean {
